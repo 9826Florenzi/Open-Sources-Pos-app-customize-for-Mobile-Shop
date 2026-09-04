@@ -1,10 +1,28 @@
 # POS - Retail, Inventory & Repair Management System
 
+[![Release](https://img.shields.io/badge/Release-v2.0.0-0078D6?style=flat-square)](https://github.com/9826Florenzi/Open-Sources-Pos-app-customize-for-Mobile-Shop/releases/latest)
+[![Download Windows](https://img.shields.io/badge/Download-Windows_Installer_(.exe)-0078D6?logo=windows&style=flat-square)](https://github.com/9826Florenzi/Open-Sources-Pos-app-customize-for-Mobile-Shop/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
+
 A desktop Point of Sale (POS) and inventory management application tailored for mobile phone retail, accessories, and device repair businesses. Built with Electron, React 19, TypeScript, Vite, and an embedded SQLite database (better-sqlite3).
 
 ---
 
-[English](#english) | [Tiếng Việt](#tiếng-việt)
+[Download](#download) | [English Documentation](#english) | [Tài Liệu Tiếng Việt](#tiếng-việt)
+
+---
+
+<a name="download"></a>
+## Quick Download / Tải Bản Cài Đặt
+
+If you are an end-user or store owner, you do not need to install Node.js or compile from source. Download the pre-built installer:
+
+- **Download Windows 64-bit Installer (.exe)**: [Latest GitHub Releases](https://github.com/9826Florenzi/Open-Sources-Pos-app-customize-for-Mobile-Shop/releases/latest)  
+  *(Download file `POS Quản Lý Bán Hàng Setup 2.0.0.exe`, run and follow the setup wizard)*
+
+Dành cho chủ cửa hàng và người sử dụng: Bạn không cần cài đặt môi trường lập trình hay gõ lệnh. Tải trực tiếp bộ cài đặt:
+- **Tải tệp cài đặt Windows (.exe)**: [Mục Releases Mới Nhất](https://github.com/9826Florenzi/Open-Sources-Pos-app-customize-for-Mobile-Shop/releases/latest)  
+  *(Tải tệp `POS Quản Lý Bán Hàng Setup 2.0.0.exe` về máy, nhấp đúp để cài đặt và sử dụng ngay)*
 
 ---
 
@@ -19,9 +37,11 @@ This system is an offline-first desktop application designed for single-store re
 #### 1. Point of Sale (POS) & IMEI Tracking
 - Fast checkout interface optimized for barcode scanning and keyboard shortcuts.
 - Multi-variant IMEI tracking: a single product model (e.g., iPhone 15 Pro Max) can manage distinct serial units, each with independent storage capacities, colors, cosmetic conditions, cost prices, and selling prices.
+- Item-level discounts & Gift promotion: apply direct monetary deductions to specific cart items or mark items as complimentary gifts (`0đ`). Inventory stock is decremented accurately upon checkout regardless of discount value.
+- Order-level discounts: switch between percentage (`%`) or direct fiat (`VNĐ`) reductions.
 - Automated customer assignment prompt when an IMEI item is added to cart, ensuring warranty records are linked upon checkout.
 - Parked order support: suspend current transactions to serve subsequent customers and resume anytime.
-- Direct thermal receipt printing supporting standard 80mm and 58mm paper widths.
+- Direct thermal receipt printing supporting standard 80mm and 58mm paper widths, with annotations for promotional and gifted items.
 
 #### 2. Dual Barcode Label Calibration (Xprinter XP-350B)
 - Optimized for the Xprinter XP-350B thermal label printer.
@@ -30,9 +50,10 @@ This system is an offline-first desktop application designed for single-store re
 - Calibration values are persisted locally in client storage.
 - Automated SKU code generation formatted as `SP00xxxx` when creating items without barcodes.
 
-#### 3. Device Repair Ticketing
+#### 3. Device Repair Ticketing & Post-Intake Management
 - Comprehensive intake ticketing: device model, IMEI/serial, fault description, cosmetic condition upon reception, estimated delivery date, and deposit.
-- Line item categorization distinguishing spare parts, service charges, and technician labor.
+- Post-intake editing: authorized staff and administrators can update diagnostic findings, resolution details, updated repair totals, deposits, and promised return dates at any stage.
+- Inline line-item editing: add, modify, or remove spare parts, service charges, and technician labor lines with instantaneous total recalculations.
 - Full ticket status progression: Received, Diagnosing, Awaiting Parts, Repairing, Completed, Returned, Cancelled.
 - Printable service claim receipts for customers.
 
@@ -78,7 +99,7 @@ This system is an offline-first desktop application designed for single-store re
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/YOUR_USERNAME/POS_Quan_Ly_Ban_Hang.git
+git clone https://github.com/9826Florenzi/Open-Sources-Pos-app-customize-for-Mobile-Shop.git
 cd POS_Quan_Ly_Ban_Hang
 ```
 
@@ -151,9 +172,11 @@ Hệ thống là ứng dụng máy tính (Desktop App) hoạt động độc l�
 #### 1. Màn Hình Bán Hàng (POS) & Quản Lý IMEI
 - Giao diện bán hàng tối ưu cho đầu đọc mã vạch và thao tác bàn phím nhanh.
 - Quản lý máy IMEI theo cấu hình chi tiết: một dòng sản phẩm (ví dụ iPhone 15 Pro Max) có thể quản lý nhiều máy với dung lượng, màu sắc, tình trạng ngoại quan, giá nhập và giá bán riêng biệt.
+- Giảm giá trực tiếp theo món & Bán kèm quà tặng (`0đ`): cho phép nhập số tiền giảm riêng cho từng sản phẩm hoặc bấm chọn tặng kèm 0đ (ví dụ: tặng kèm củ sạc, tai nghe khi mua máy). Hệ thống vẫn trừ chính xác số lượng tồn kho của món quà trong kho hàng.
+- Giảm giá toàn đơn hàng linh hoạt: hỗ trợ chuyển đổi giữa tỷ lệ phần trăm (`%`) hoặc số tiền cụ thể (`VNĐ`).
 - Tự động bật hộp thoại chọn hoặc thêm khách hàng khi đưa sản phẩm IMEI vào đơn, đảm bảo liên kết dữ liệu bảo hành ngay khi thanh toán.
 - Chức năng lưu tạm đơn hàng: tạm dừng giao dịch hiện tại để thanh toán cho khách tiếp theo và khôi phục lại bất kỳ lúc nào.
-- In hóa đơn trực tiếp qua máy in nhiệt hỗ trợ khổ giấy tiêu chuẩn 80mm và 58mm.
+- In hóa đơn trực tiếp qua máy in nhiệt hỗ trợ khổ giấy tiêu chuẩn 80mm và 58mm, tự động hiển thị chi tiết các món được tặng hoặc giảm giá.
 
 #### 2. Cân Chỉnh In Tem Mã Vạch Kép (Xprinter XP-350B)
 - Tương thích chuyên sâu với dòng máy in tem nhiệt Xprinter XP-350B.
@@ -162,9 +185,10 @@ Hệ thống là ứng dụng máy tính (Desktop App) hoạt động độc l�
 - Toàn bộ giá trị cân chỉnh được lưu tự động trên bộ nhớ cục bộ của máy.
 - Tự động tạo mã SKU duy nhất theo định dạng `SP00xxxx` khi tạo sản phẩm chưa có mã vạch.
 
-#### 3. Tiếp Nhận & Quản Lý Sửa Chữa
+#### 3. Tiếp Nhận & Quản Lý Phiếu Sửa Chữa Toàn Diện
 - Quy trình tiếp nhận thiết bị đầy đủ: thông tin máy, số IMEI/Serial, mô tả lỗi, tình trạng ngoại quan khi nhận, ngày hẹn trả và số tiền tạm ứng.
-- Bóc tách chi phí rõ ràng giữa linh kiện thay thế, phí dịch vụ và tiền công kỹ thuật.
+- Chỉnh sửa thông tin phiếu sau tiếp nhận: cho phép quản trị viên và kỹ thuật viên cập nhật lại nội dung xử lý/đã sửa những gì, cập nhật tổng chi phí sửa chữa, tiền khách đặt cọc và ngày hẹn trả.
+- Chỉnh sửa trực tiếp (Inline edit) các dòng chi phí: thêm, bớt hoặc chỉnh sửa tức thì đơn giá, số lượng, tên linh kiện thay thế hoặc tiền công thợ.
 - Theo dõi trạng thái sửa chữa theo chu trình: Đã tiếp nhận, Đang kiểm tra, Chờ linh kiện, Đang sửa, Đã hoàn thành, Đã trả máy, Đã hủy.
 - In phiếu biên nhận dịch vụ sửa chữa cho khách hàng.
 
@@ -210,7 +234,7 @@ Hệ thống là ứng dụng máy tính (Desktop App) hoạt động độc l�
 
 1. Sao chép mã nguồn:
 ```bash
-git clone https://github.com/YOUR_USERNAME/POS_Quan_Ly_Ban_Hang.git
+git clone https://github.com/9826Florenzi/Open-Sources-Pos-app-customize-for-Mobile-Shop.git
 cd POS_Quan_Ly_Ban_Hang
 ```
 
