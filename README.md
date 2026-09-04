@@ -17,7 +17,7 @@ Xây dựng trên nền tảng **Electron**, **React 19**, **TypeScript**, **Vit
 ### 2. 🏷️ In Tem Mã Vạch Kép (Xprinter XP-350B)
 - Tương thích tốt nhất với dòng máy in tem nhiệt phổ biến **Xprinter XP-350B**.
 - Hỗ trợ tem đôi (72x22mm, 74x22mm) và tem đơn (40x30mm).
-- **Bộ căn chỉnh lệch tem kép độc quyền:** Cho phép điều chỉnh độc lập tem trái và tem phải (mốc 0mm mặc định đã được căn chuẩn dịch -3mm cho tem phải).
+- **Bộ căn chỉnh lệch tem kép độc quyền:** Cho phép điều chỉnh độc lập tem trái và tem phải.
 - Tự động sinh mã SKU duy nhất theo định dạng chuẩn `SP00xxxx` khi sản phẩm chưa có mã.
 
 ### 3. 🔧 Quản Lý Dịch Vụ Sửa Chữa
