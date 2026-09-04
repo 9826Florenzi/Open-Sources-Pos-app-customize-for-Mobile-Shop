@@ -1,0 +1,51 @@
+{
+  "name": "pos-quan-ly-ban-hang",
+  "version": "2.0.0",
+  "description": "Phần mềm POS Quản Lý Bán Hàng - Cửa hàng Điện thoại/Phụ kiện/Sửa chữa",
+  "main": "dist-electron/main.js",
+  "author": "Đại Nguyễn Mobile",
+  "license": "MIT",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
+    "build": "tsc -p tsconfig.electron.json && vite build",
+    "dist:win": "npm run build && electron-builder --win"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.0.0",
+    "dayjs": "^1.11.13",
+    "jsbarcode": "^3.12.3",
+    "node-thermal-printer": "^4.4.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8",
+    "lucide-react": "^0.469.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.1",
+    "recharts": "^2.14.1",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.pos.quanlybanhang",
+    "productName": "POS Quản Lý Bán Hàng",
+    "win": {
+      "target": "nsis"
+    },
+    "directories": {
+      "output": "dist-electron-app"
+    }
+  }
+}
