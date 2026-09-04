@@ -10,12 +10,15 @@ export function registerRepairHandlers(ipcMain: IpcMain, db: Database.Database) 
   }
 
   function updateTotalFee(ticketId: number) {
-    const sumResult = db.prepare('SELECT COALESCE(SUM(line_total), 0) as total FROM repair_lines WHERE ticket_id = ?').get(ticketId) as any
-    db.prepare(`
-      UPDATE repair_tickets 
-      SET total_fee = ?, total_amount = ?, updated_at = datetime('now', '+7 hours') 
-      WHERE id = ?
-    `).run(sumResult.total, sumResult.total, ticketId)
+    const lineCount = (db.prepare('SELECT COUNT(*) as c FROM repair_lines WHERE ticket_id = ?').get(ticketId) as any).c
+    if (lineCount > 0) {
+      const sumResult = db.prepare('SELECT COALESCE(SUM(line_total), 0) as total FROM repair_lines WHERE ticket_id = ?').get(ticketId) as any
+      db.prepare(`
+        UPDATE repair_tickets 
+        SET total_fee = ?, total_amount = ?, updated_at = datetime('now', '+7 hours') 
+        WHERE id = ?
+      `).run(sumResult.total, sumResult.total, ticketId)
+    }
   }
 
   ipcMain.handle('repair:getAll', (_, filters: any = {}) => {
@@ -90,6 +93,8 @@ export function registerRepairHandlers(ipcMain: IpcMain, db: Database.Database) 
       const depositPaid = data.deposit_paid || 0
       const staffId = data.staff_id || null
 
+      const initialFee = parseFloat(data.total_fee) || 0
+
       const result = db.prepare(`
         INSERT INTO repair_tickets (
           ticket_number, customer_id, customer_name, customer_phone, device_info, imei,
@@ -100,7 +105,7 @@ export function registerRepairHandlers(ipcMain: IpcMain, db: Database.Database) 
         VALUES (
           ?, ?, ?, ?, ?, ?,
           ?, 'received', ?, ?, ?, ?,
-          0, 0, ?, ?, ?,
+          ?, ?, ?, ?, ?,
           datetime('now', '+7 hours'), datetime('now', '+7 hours'), datetime('now', '+7 hours')
         )
       `).run(
@@ -115,6 +120,8 @@ export function registerRepairHandlers(ipcMain: IpcMain, db: Database.Database) 
         staffId,
         depositPaid,
         note,
+        initialFee,
+        initialFee,
         depositPaid,
         staffId,
         note
@@ -154,16 +161,16 @@ export function registerRepairHandlers(ipcMain: IpcMain, db: Database.Database) 
     try {
       const imei = typeof data.imei === 'string' ? data.imei.trim() : ''
       const note = data.note || ''
-      const depositPaid = data.deposit_paid || 0
+      const depositPaid = data.deposit_paid !== undefined ? parseFloat(data.deposit_paid) || 0 : 0
       const staffId = data.staff_id || null
 
-      db.prepare(`
+      let query = `
         UPDATE repair_tickets SET 
           customer_name=?, customer_phone=?, device_info=?, imei=?, issue_description=?,
           promised_at=?, staff_id=?, user_id=?, deposit_paid=?, paid_amount=?, note=?, notes=?,
           updated_at=datetime('now', '+7 hours')
-        WHERE id=?
-      `).run(
+      `
+      const params: any[] = [
         data.customer_name,
         data.customer_phone || '',
         data.device_info,
@@ -175,14 +182,25 @@ export function registerRepairHandlers(ipcMain: IpcMain, db: Database.Database) 
         depositPaid,
         depositPaid,
         note,
-        note,
-        data.id
-      )
+        note
+      ]
+
+      if (data.total_fee !== undefined) {
+        const fee = parseFloat(data.total_fee) || 0
+        query += `, total_fee = ?, total_amount = ?`
+        params.push(fee, fee)
+      }
+
+      query += ` WHERE id=?`
+      params.push(data.id)
+
+      db.prepare(query).run(...params)
+
       logAudit(db, {
         action: 'Cập nhật phiếu sửa',
         entity: 'repair',
         entity_id: data.id,
-        details: `Cập nhật thông tin phiếu #${data.id} (Máy: ${data.device_info}, Khách: ${data.customer_name})`
+        details: `Cập nhật thông tin phiếu #${data.id} (Máy: ${data.device_info}, Khách: ${data.customer_name}${data.total_fee !== undefined ? ', Tổng phí: ' + data.total_fee : ''})`
       })
       return { success: true }
     } catch (e: any) {

@@ -103,6 +103,13 @@ export function registerPrintHandlers(ipcMain: IpcMain, db: Database.Database) {
         if (item.imei) {
           printer.println(`  IMEI: ${item.imei}`)
         }
+        if (item.discount_amount > 0) {
+          if (item.subtotal === 0) {
+            printer.println(`  [Tang kem 0d] (Gia goc: ${formatCurrency(item.unit_price * item.quantity)})`)
+          } else {
+            printer.println(`  (Giam truc tiep: -${formatCurrency(item.discount_amount)})`)
+          }
+        }
         printer.tableCustom([
           { text: `  ${item.quantity} x ${formatCurrency(item.unit_price)}`, align: 'LEFT', width: 0.6 },
           { text: formatCurrency(item.subtotal), align: 'RIGHT', width: 0.4 }

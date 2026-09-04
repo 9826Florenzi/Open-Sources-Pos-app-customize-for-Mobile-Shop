@@ -18,7 +18,8 @@ import {
   Zap,
   Shield,
   Gem,
-  Package
+  Package,
+  Gift
 } from 'lucide-react'
 
 function getCategoryIcon(catName: string, isImei: number) {
@@ -68,6 +69,7 @@ export const POS: React.FC = () => {
   const [customer, setCustomer] = useState<any>(null)
   const [discountPercent, setDiscountPercent] = useState<number>(0)
   const [discountAmount, setDiscountAmount] = useState<number>(0)
+  const [discountMode, setDiscountMode] = useState<'percent' | 'vnd'>('percent')
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | 'card'>('cash')
   const [cashReceived, setCashReceived] = useState<string>('')
   const [orderNote, setOrderNote] = useState('')
@@ -294,10 +296,46 @@ export const POS: React.FC = () => {
         return prev
       }
       const updated = [...prev]
+      const wasGifted = item.discount_amount === item.unit_price * item.quantity && item.discount_amount > 0
+      const newDiscount = wasGifted
+        ? item.unit_price * newQty
+        : Math.min(item.discount_amount, item.unit_price * newQty)
       updated[idx] = {
         ...item,
         quantity: newQty,
-        subtotal: item.unit_price * newQty - item.discount_amount
+        discount_amount: newDiscount,
+        subtotal: Math.max(0, item.unit_price * newQty - newDiscount)
+      }
+      return updated
+    })
+  }
+
+  function updateItemDiscount(idx: number, discountVal: number) {
+    setCart(prev => {
+      const updated = [...prev]
+      const item = updated[idx]
+      const maxVal = item.unit_price * item.quantity
+      const safeDiscount = Math.max(0, Math.min(discountVal, maxVal))
+      updated[idx] = {
+        ...item,
+        discount_amount: safeDiscount,
+        subtotal: Math.max(0, maxVal - safeDiscount)
+      }
+      return updated
+    })
+  }
+
+  function toggleItemGift(idx: number) {
+    setCart(prev => {
+      const updated = [...prev]
+      const item = updated[idx]
+      const fullVal = item.unit_price * item.quantity
+      const isCurrentlyGift = item.discount_amount === fullVal && fullVal > 0
+      const newDiscount = isCurrentlyGift ? 0 : fullVal
+      updated[idx] = {
+        ...item,
+        discount_amount: newDiscount,
+        subtotal: Math.max(0, fullVal - newDiscount)
       }
       return updated
     })
@@ -309,7 +347,9 @@ export const POS: React.FC = () => {
 
   // Calculations
   const subtotal = cart.reduce((sum, i) => sum + i.subtotal, 0)
-  const calcDiscount = discountAmount > 0 ? discountAmount : (subtotal * discountPercent) / 100
+  const calcDiscount = discountMode === 'vnd'
+    ? Math.min(subtotal, discountAmount)
+    : Math.round((subtotal * discountPercent) / 100)
   const totalAmount = Math.max(0, subtotal - calcDiscount)
   const receivedNum = cashReceived === '' ? totalAmount : parseFloat(cashReceived) || 0
   const changeAmount = Math.max(0, receivedNum - totalAmount)
@@ -327,7 +367,7 @@ export const POS: React.FC = () => {
         user_id: user?.id || null,
         subtotal,
         discount_amount: calcDiscount,
-        discount_percent: discountPercent,
+        discount_percent: discountMode === 'percent' ? discountPercent : 0,
         total_amount: totalAmount,
         payment_method: paymentMethod,
         cash_received: receivedNum,
@@ -360,6 +400,7 @@ export const POS: React.FC = () => {
         setCustomer(null)
         setDiscountPercent(0)
         setDiscountAmount(0)
+        setDiscountMode('percent')
         setCashReceived('')
         setOrderNote('')
         loadProducts()
@@ -611,47 +652,101 @@ export const POS: React.FC = () => {
 
         {/* Cart Items List */}
         <div className="cart-items">
-          {cart.map((item, idx) => (
-            <div key={item.id} className="cart-item">
-              <div className="cart-item-name">
-                <div style={{ fontWeight: 600 }}>{item.product_name}</div>
-                {item.imei && (
-                  <div style={{ fontSize: 10, color: 'var(--primary)', fontWeight: 700 }}>
-                    IMEI: {item.imei}
+          {cart.map((item, idx) => {
+            const isGift = item.discount_amount > 0 && item.discount_amount === item.unit_price * item.quantity
+            return (
+              <div key={item.id} className="cart-item">
+                <div className="cart-item-main">
+                  <div className="cart-item-name">
+                    <div style={{ fontWeight: 600 }}>{item.product_name}</div>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 2, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                        Đơn giá: {formatCurrency(item.unit_price)}
+                      </span>
+                      {item.imei && (
+                        <span style={{ fontSize: 10, color: 'var(--primary)', fontWeight: 700 }}>
+                          IMEI: {item.imei}
+                        </span>
+                      )}
+                      {item.item_type === 'service' && (
+                        <span className="badge badge-info" style={{ fontSize: 9 }}>Dịch vụ</span>
+                      )}
+                      {isGift && (
+                        <span className="badge badge-success" style={{ fontSize: 9, fontWeight: 700 }}>
+                          🎁 TẶNG KÈM (0đ)
+                        </span>
+                      )}
+                    </div>
                   </div>
-                )}
-                {item.item_type === 'service' && (
-                  <span className="badge badge-info" style={{ fontSize: 9 }}>Dịch vụ</span>
-                )}
-              </div>
 
-              {!item.imei ? (
-                <div className="qty-control">
-                  <button className="qty-btn" onClick={() => updateQty(idx, -1)}>
-                    <Minus size={12} />
-                  </button>
-                  <span className="qty-value">{item.quantity}</span>
-                  <button className="qty-btn" onClick={() => updateQty(idx, 1)}>
-                    <Plus size={12} />
+                  {!item.imei ? (
+                    <div className="qty-control">
+                      <button className="qty-btn" onClick={() => updateQty(idx, -1)}>
+                        <Minus size={12} />
+                      </button>
+                      <span className="qty-value">{item.quantity}</span>
+                      <button className="qty-btn" onClick={() => updateQty(idx, 1)}>
+                        <Plus size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="badge badge-gray" style={{ fontSize: 11 }}>1 máy</span>
+                  )}
+
+                  <div className="cart-item-subtotal">
+                    {item.discount_amount > 0 ? (
+                      <div>
+                        <div style={{ fontSize: 10, textDecoration: 'line-through', color: 'var(--text-muted)' }}>
+                          {formatCurrency(item.unit_price * item.quantity)}
+                        </div>
+                        <div style={{ color: isGift ? 'var(--success)' : 'var(--primary)', fontWeight: 700 }}>
+                          {formatCurrency(item.subtotal)}
+                        </div>
+                      </div>
+                    ) : (
+                      formatCurrency(item.subtotal)
+                    )}
+                  </div>
+
+                  <button
+                    className="btn btn-ghost btn-icon btn-sm"
+                    onClick={() => removeFromCart(idx)}
+                    style={{ color: 'var(--danger)' }}
+                    title="Xóa khỏi giỏ"
+                  >
+                    <Trash2 size={13} />
                   </button>
                 </div>
-              ) : (
-                <span className="badge badge-gray" style={{ fontSize: 11 }}>1 máy</span>
-              )}
 
-              <div className="cart-item-subtotal">
-                {formatCurrency(item.subtotal)}
+                {/* Per-item direct discount & gift option */}
+                <div className="cart-item-discount-row">
+                  <button
+                    type="button"
+                    className={`btn btn-xs ${isGift ? 'btn-success' : 'btn-outline'}`}
+                    style={{ padding: '2px 8px', fontSize: 10, borderRadius: 4 }}
+                    onClick={() => toggleItemGift(idx)}
+                    title="Bán kèm quà tặng 0đ (vẫn trừ kho và ghi nhận)"
+                  >
+                    <Gift size={11} style={{ marginRight: 3 }} />
+                    {isGift ? 'Đang tặng (0đ)' : 'Tặng kèm (0đ)'}
+                  </button>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Giảm món:</span>
+                    <input
+                      type="number"
+                      className="form-input"
+                      style={{ width: 85, padding: '2px 6px', height: 22, fontSize: 11, textAlign: 'right' }}
+                      value={item.discount_amount || ''}
+                      placeholder="0 đ"
+                      onChange={e => updateItemDiscount(idx, parseFloat(e.target.value) || 0)}
+                    />
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>đ</span>
+                  </div>
+                </div>
               </div>
-
-              <button
-                className="btn btn-ghost btn-icon btn-sm"
-                onClick={() => removeFromCart(idx)}
-                style={{ color: 'var(--danger)' }}
-              >
-                <Trash2 size={13} />
-              </button>
-            </div>
-          ))}
+            )
+          })}
 
           {cart.length === 0 && (
             <div className="empty-state" style={{ padding: '40px 10px' }}>
@@ -669,20 +764,75 @@ export const POS: React.FC = () => {
           </div>
 
           <div className="cart-summary-row">
-            <span>Giảm giá:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>Giảm cả đơn:</span>
+              <div style={{ display: 'inline-flex', borderRadius: 4, overflow: 'hidden', border: '1px solid var(--border)', fontSize: 10 }}>
+                <button
+                  type="button"
+                  style={{
+                    padding: '2px 6px',
+                    background: discountMode === 'percent' ? 'var(--primary)' : 'transparent',
+                    color: discountMode === 'percent' ? '#fff' : 'var(--text-secondary)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 600
+                  }}
+                  onClick={() => {
+                    setDiscountMode('percent')
+                    setDiscountAmount(0)
+                  }}
+                >
+                  %
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    padding: '2px 6px',
+                    background: discountMode === 'vnd' ? 'var(--primary)' : 'transparent',
+                    color: discountMode === 'vnd' ? '#fff' : 'var(--text-secondary)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 600
+                  }}
+                  onClick={() => {
+                    setDiscountMode('vnd')
+                    setDiscountPercent(0)
+                  }}
+                >
+                  VNĐ
+                </button>
+              </div>
+            </div>
+
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <input
-                type="number"
-                className="form-input"
-                style={{ width: 70, padding: '2px 6px', height: 26, fontSize: 12 }}
-                value={discountPercent || ''}
-                placeholder="0%"
-                onChange={e => {
-                  setDiscountPercent(parseFloat(e.target.value) || 0)
-                  setDiscountAmount(0)
-                }}
-              />
-              <span style={{ fontSize: 11, color: 'var(--danger)' }}>
+              {discountMode === 'percent' ? (
+                <input
+                  type="number"
+                  className="form-input"
+                  style={{ width: 65, padding: '2px 6px', height: 26, fontSize: 12, textAlign: 'right' }}
+                  value={discountPercent || ''}
+                  placeholder="0%"
+                  onChange={e => {
+                    const val = Math.max(0, Math.min(100, parseFloat(e.target.value) || 0))
+                    setDiscountPercent(val)
+                    setDiscountAmount(0)
+                  }}
+                />
+              ) : (
+                <input
+                  type="number"
+                  className="form-input"
+                  style={{ width: 95, padding: '2px 6px', height: 26, fontSize: 12, textAlign: 'right' }}
+                  value={discountAmount || ''}
+                  placeholder="0 đ"
+                  onChange={e => {
+                    const val = Math.max(0, parseFloat(e.target.value) || 0)
+                    setDiscountAmount(val)
+                    setDiscountPercent(0)
+                  }}
+                />
+              )}
+              <span style={{ fontSize: 11, color: 'var(--danger)', fontWeight: 600, minWidth: 60, textAlign: 'right' }}>
                 -{formatCurrency(calcDiscount)}
               </span>
             </div>

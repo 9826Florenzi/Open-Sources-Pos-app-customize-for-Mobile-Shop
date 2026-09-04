@@ -15,7 +15,9 @@ import {
   Download,
   Calendar,
   Phone,
-  Edit2
+  Edit2,
+  Check,
+  X
 } from 'lucide-react'
 import { Modal } from '../components/Modal'
 import { useAuth, useNotify } from '../context/AppContext'
@@ -62,6 +64,7 @@ export const Repair: React.FC = () => {
     issue_description: '',
     promised_at: '',
     deposit_paid: '',
+    total_fee: '',
     note: ''
   })
   const [customerSuggestions, setCustomerSuggestions] = useState<any[]>([])
@@ -79,14 +82,19 @@ export const Repair: React.FC = () => {
     issue_description: '',
     promised_at: '',
     deposit_paid: '',
+    total_fee: '',
     note: ''
   })
 
-  // Add line item in detail
+  // Line item states
   const [newLineType, setNewLineType] = useState<'service' | 'part' | 'labor'>('service')
   const [newLineName, setNewLineName] = useState('')
   const [newLinePrice, setNewLinePrice] = useState('')
   const [newLineQty, setNewLineQty] = useState('1')
+
+  // Edit line state
+  const [editingLineId, setEditingLineId] = useState<number | null>(null)
+  const [editLineData, setEditLineData] = useState({ name: '', price: '', qty: '1', line_type: 'service' })
 
   useEffect(() => {
     loadTickets()
@@ -133,6 +141,7 @@ export const Repair: React.FC = () => {
     const res = await window.api.repair.create({
       ...createForm,
       deposit_paid: parseFloat(createForm.deposit_paid) || 0,
+      total_fee: parseFloat(createForm.total_fee) || 0,
       staff_id: user?.id
     })
     setLoading(false)
@@ -148,6 +157,7 @@ export const Repair: React.FC = () => {
         issue_description: '',
         promised_at: '',
         deposit_paid: '',
+        total_fee: '',
         note: ''
       })
       setCustomerSuggestions([])
@@ -157,7 +167,7 @@ export const Repair: React.FC = () => {
     }
   }
 
-  async function openDetail(ticketId: number) {
+  async function openDetail(ticketId: number, startEdit = false) {
     const detail = await window.api.repair.getById(ticketId)
     setSelectedTicket(detail)
     setEditForm({
@@ -168,9 +178,10 @@ export const Repair: React.FC = () => {
       issue_description: detail.issue_description || '',
       promised_at: detail.promised_at ? detail.promised_at.slice(0, 16) : '',
       deposit_paid: String(detail.deposit_paid || 0),
+      total_fee: String(detail.total_fee || 0),
       note: detail.note || ''
     })
-    setIsEditingInfo(false)
+    setIsEditingInfo(startEdit)
     setShowDetailModal(true)
   }
 
@@ -206,12 +217,46 @@ export const Repair: React.FC = () => {
     const res = await window.api.repair.update({
       id: selectedTicket.id,
       ...editForm,
+      total_fee: parseFloat(editForm.total_fee) || 0,
       deposit_paid: parseFloat(editForm.deposit_paid) || 0,
       staff_id: selectedTicket.staff_id || user?.id
     })
     if (res.success) {
-      notify.success('Đã cập nhật thông tin phiếu')
+      notify.success('Đã cập nhật thông tin phiếu sửa')
       setIsEditingInfo(false)
+      const updated = await window.api.repair.getById(selectedTicket.id)
+      setSelectedTicket(updated)
+      loadTickets()
+    } else {
+      notify.error('Lỗi', res.message)
+    }
+  }
+
+  function handleStartEditLine(line: any) {
+    setEditingLineId(line.id)
+    setEditLineData({
+      name: line.name || '',
+      price: String(line.price || 0),
+      qty: String(line.qty || 1),
+      line_type: line.line_type || 'service'
+    })
+  }
+
+  async function handleSaveEditLine(lineId: number) {
+    if (!editLineData.name.trim()) {
+      notify.warning('Thiếu thông tin', 'Vui lòng nhập tên hạng mục')
+      return
+    }
+    const res = await window.api.repair.updateLine({
+      id: lineId,
+      name: editLineData.name.trim(),
+      price: parseFloat(editLineData.price) || 0,
+      qty: parseInt(editLineData.qty) || 1,
+      line_type: editLineData.line_type
+    })
+    if (res.success) {
+      notify.success('Đã cập nhật hạng mục chi phí')
+      setEditingLineId(null)
       const updated = await window.api.repair.getById(selectedTicket.id)
       setSelectedTicket(updated)
       loadTickets()
@@ -461,10 +506,23 @@ export const Repair: React.FC = () => {
                         borderTop: '1px dashed var(--border)',
                         fontSize: 11
                       }}>
-                        <span>Phí: <b>{formatCurrency(t.total_fee)}</b></span>
-                        {t.deposit_paid > 0 && (
-                          <span style={{ color: 'var(--success)' }}>Cọc: {formatCurrency(t.deposit_paid)}</span>
-                        )}
+                        <div>
+                          <span>Phí: <b>{formatCurrency(t.total_fee)}</b></span>
+                          {t.deposit_paid > 0 && (
+                            <span style={{ color: 'var(--success)', marginLeft: 6 }}>• Cọc: {formatCurrency(t.deposit_paid)}</span>
+                          )}
+                        </div>
+                        <button
+                          className="btn btn-ghost btn-xs"
+                          style={{ padding: '2px 6px', fontSize: 11 }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openDetail(t.id, true)
+                          }}
+                          title="Sửa thông tin phiếu"
+                        >
+                          <Edit2 size={11} style={{ marginRight: 2 }} /> Sửa
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -530,8 +588,11 @@ export const Repair: React.FC = () => {
                         {formatCurrency(t.deposit_paid)}
                       </td>
                       <td className="text-center">
-                        <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openDetail(t.id)}>
+                        <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openDetail(t.id)} title="Xem chi tiết">
                           <Eye size={14} />
+                        </button>
+                        <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openDetail(t.id, true)} title="Sửa thông tin phiếu" style={{ color: 'var(--primary)' }}>
+                          <Edit2 size={14} />
                         </button>
                       </td>
                     </tr>
@@ -647,7 +708,29 @@ export const Repair: React.FC = () => {
           />
         </div>
 
-        <div className="form-row col-2">
+        <div className="form-row col-3">
+          <div className="form-group">
+            <label className="form-label">Chi phí sửa dự kiến (đ)</label>
+            <input
+              type="number"
+              className="form-input"
+              value={createForm.total_fee}
+              onChange={e => setCreateForm({ ...createForm, total_fee: e.target.value })}
+              placeholder="0"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Khách đặt cọc (đ)</label>
+            <input
+              type="number"
+              className="form-input"
+              value={createForm.deposit_paid}
+              onChange={e => setCreateForm({ ...createForm, deposit_paid: e.target.value })}
+              placeholder="0"
+            />
+          </div>
+
           <div className="form-group">
             <label className="form-label">Hẹn ngày giờ trả máy</label>
             <input
@@ -655,17 +738,6 @@ export const Repair: React.FC = () => {
               className="form-input"
               value={createForm.promised_at}
               onChange={e => setCreateForm({ ...createForm, promised_at: e.target.value })}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Tiền khách đặt cọc trước (đ)</label>
-            <input
-              type="number"
-              className="form-input"
-              value={createForm.deposit_paid}
-              onChange={e => setCreateForm({ ...createForm, deposit_paid: e.target.value })}
-              placeholder="0"
             />
           </div>
         </div>
@@ -753,13 +825,17 @@ export const Repair: React.FC = () => {
                   {selectedTicket.promised_at && (
                     <div><b>Hẹn trả:</b> {formatDateTime(selectedTicket.promised_at)}</div>
                   )}
-                  {selectedTicket.note && (
-                    <div style={{ gridColumn: '1/-1' }}><b>Ghi chú:</b> {selectedTicket.note}</div>
-                  )}
+                  <div><b>Tổng chi phí:</b> <span style={{ color: 'var(--primary)', fontWeight: 700 }}>{formatCurrency(selectedTicket.total_fee)}</span></div>
+                  <div><b>Đã cọc:</b> <span style={{ color: 'var(--success)', fontWeight: 600 }}>{formatCurrency(selectedTicket.deposit_paid)}</span></div>
                   <div style={{ gridColumn: '1/-1' }}>
                     <b>Tình trạng lỗi:</b>{' '}
                     <span style={{ color: 'var(--danger)', fontWeight: 600 }}>{selectedTicket.issue_description || 'Không mô tả'}</span>
                   </div>
+                  {selectedTicket.note && (
+                    <div style={{ gridColumn: '1/-1', background: '#f1f5f9', padding: '8px 10px', borderRadius: 4, borderLeft: '3px solid var(--primary)' }}>
+                      <b>Nội dung xử lý / Ghi chú:</b> {selectedTicket.note}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -801,21 +877,22 @@ export const Repair: React.FC = () => {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Tình trạng lỗi</label>
+                  <label className="form-label">Tình trạng lỗi ban đầu</label>
                   <input
                     className="form-input"
                     value={editForm.issue_description}
                     onChange={e => setEditForm({ ...editForm, issue_description: e.target.value })}
                   />
                 </div>
-                <div className="form-row col-2">
+                <div className="form-row col-3">
                   <div className="form-group">
-                    <label className="form-label">Hẹn ngày trả</label>
+                    <label className="form-label">Tổng chi phí sửa (đ)</label>
                     <input
-                      type="datetime-local"
+                      type="number"
                       className="form-input"
-                      value={editForm.promised_at}
-                      onChange={e => setEditForm({ ...editForm, promised_at: e.target.value })}
+                      value={editForm.total_fee}
+                      onChange={e => setEditForm({ ...editForm, total_fee: e.target.value })}
+                      placeholder="0"
                     />
                   </div>
                   <div className="form-group">
@@ -825,15 +902,27 @@ export const Repair: React.FC = () => {
                       className="form-input"
                       value={editForm.deposit_paid}
                       onChange={e => setEditForm({ ...editForm, deposit_paid: e.target.value })}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Hẹn ngày trả</label>
+                    <input
+                      type="datetime-local"
+                      className="form-input"
+                      value={editForm.promised_at}
+                      onChange={e => setEditForm({ ...editForm, promised_at: e.target.value })}
                     />
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Ghi chú</label>
-                  <input
+                  <label className="form-label">Nội dung xử lý / Đã sửa những gì / Ghi chú</label>
+                  <textarea
                     className="form-input"
+                    rows={2}
                     value={editForm.note}
                     onChange={e => setEditForm({ ...editForm, note: e.target.value })}
+                    placeholder="VD: Đã thay màn hình zin, sửa IC nguồn, vệ sinh loa, tặng dán cường lực..."
                   />
                 </div>
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
@@ -856,32 +945,106 @@ export const Repair: React.FC = () => {
                   <th className="text-center">Số lượng</th>
                   <th className="text-right">Đơn giá</th>
                   <th className="text-right">Thành tiền</th>
-                  <th></th>
+                  <th className="text-center">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
-                {selectedTicket.lines?.map((line: any) => (
-                  <tr key={line.id}>
-                    <td><strong>{line.name}</strong></td>
-                    <td>
-                      <span className="badge badge-gray">
-                        {line.line_type === 'labor' ? 'Công thợ' : line.line_type === 'part' ? 'Linh kiện' : 'Dịch vụ'}
-                      </span>
-                    </td>
-                    <td className="text-center">{line.qty}</td>
-                    <td className="text-right">{formatCurrency(line.price)}</td>
-                    <td className="text-right font-bold">{formatCurrency(line.line_total)}</td>
-                    <td className="text-center">
-                      <button
-                        className="btn btn-ghost btn-icon btn-sm"
-                        style={{ color: 'var(--danger)' }}
-                        onClick={() => handleDeleteLine(line.id)}
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {selectedTicket.lines?.map((line: any) =>
+                  editingLineId === line.id ? (
+                    <tr key={line.id} style={{ background: '#f0f7ff' }}>
+                      <td>
+                        <input
+                          className="form-input"
+                          style={{ padding: '4px 8px', fontSize: 12 }}
+                          value={editLineData.name}
+                          onChange={e => setEditLineData({ ...editLineData, name: e.target.value })}
+                          placeholder="Tên hạng mục..."
+                        />
+                      </td>
+                      <td>
+                        <select
+                          className="form-select"
+                          style={{ padding: '4px 8px', fontSize: 12 }}
+                          value={editLineData.line_type}
+                          onChange={e => setEditLineData({ ...editLineData, line_type: e.target.value as any })}
+                        >
+                          <option value="service">Dịch vụ</option>
+                          <option value="part">Linh kiện</option>
+                          <option value="labor">Công thợ</option>
+                        </select>
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="form-input text-center"
+                          style={{ width: 60, padding: '4px 8px', fontSize: 12 }}
+                          value={editLineData.qty}
+                          onChange={e => setEditLineData({ ...editLineData, qty: e.target.value })}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="form-input text-right"
+                          style={{ width: 110, padding: '4px 8px', fontSize: 12 }}
+                          value={editLineData.price}
+                          onChange={e => setEditLineData({ ...editLineData, price: e.target.value })}
+                        />
+                      </td>
+                      <td className="text-right font-bold">
+                        {formatCurrency((parseFloat(editLineData.price) || 0) * (parseInt(editLineData.qty) || 1))}
+                      </td>
+                      <td className="text-center" style={{ whiteSpace: 'nowrap' }}>
+                        <button
+                          className="btn btn-ghost btn-icon btn-sm"
+                          style={{ color: 'var(--success)', marginRight: 4 }}
+                          onClick={() => handleSaveEditLine(line.id)}
+                          title="Lưu"
+                        >
+                          <Check size={14} />
+                        </button>
+                        <button
+                          className="btn btn-ghost btn-icon btn-sm"
+                          style={{ color: 'var(--text-muted)' }}
+                          onClick={() => setEditingLineId(null)}
+                          title="Hủy"
+                        >
+                          <X size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ) : (
+                    <tr key={line.id}>
+                      <td><strong>{line.name}</strong></td>
+                      <td>
+                        <span className="badge badge-gray">
+                          {line.line_type === 'labor' ? 'Công thợ' : line.line_type === 'part' ? 'Linh kiện' : 'Dịch vụ'}
+                        </span>
+                      </td>
+                      <td className="text-center">{line.qty}</td>
+                      <td className="text-right">{formatCurrency(line.price)}</td>
+                      <td className="text-right font-bold">{formatCurrency(line.line_total)}</td>
+                      <td className="text-center" style={{ whiteSpace: 'nowrap' }}>
+                        <button
+                          className="btn btn-ghost btn-icon btn-sm"
+                          style={{ color: 'var(--primary)', marginRight: 4 }}
+                          onClick={() => handleStartEditLine(line)}
+                          title="Sửa hạng mục"
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                        <button
+                          className="btn btn-ghost btn-icon btn-sm"
+                          style={{ color: 'var(--danger)' }}
+                          onClick={() => handleDeleteLine(line.id)}
+                          title="Xóa"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                )}
                 {(!selectedTicket.lines || selectedTicket.lines.length === 0) && (
                   <tr>
                     <td colSpan={6} className="empty-state" style={{ padding: 12 }}>
