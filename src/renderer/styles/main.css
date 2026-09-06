@@ -392,6 +392,7 @@ img { max-width: 100%; }
 .btn-ghost { background: transparent; color: var(--text-secondary); border-color: transparent; }
 .btn-ghost:hover { background: var(--bg-hover); color: var(--text-primary); }
 
+.btn-xs { padding: 2px 8px; font-size: 11px; height: 24px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
 .btn-sm { padding: 5px 10px; font-size: 12px; }
 .btn-lg { padding: 11px 20px; font-size: 14px; font-weight: 600; }
 .btn-xl { padding: 14px 24px; font-size: 15px; font-weight: 700; }

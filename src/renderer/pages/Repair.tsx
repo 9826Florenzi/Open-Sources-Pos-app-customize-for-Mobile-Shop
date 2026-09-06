@@ -168,21 +168,30 @@ export const Repair: React.FC = () => {
   }
 
   async function openDetail(ticketId: number, startEdit = false) {
-    const detail = await window.api.repair.getById(ticketId)
-    setSelectedTicket(detail)
-    setEditForm({
-      customer_name: detail.customer_name || '',
-      customer_phone: detail.customer_phone || '',
-      device_info: detail.device_info || '',
-      imei: detail.imei || '',
-      issue_description: detail.issue_description || '',
-      promised_at: detail.promised_at ? detail.promised_at.slice(0, 16) : '',
-      deposit_paid: String(detail.deposit_paid || 0),
-      total_fee: String(detail.total_fee || 0),
-      note: detail.note || ''
-    })
-    setIsEditingInfo(startEdit)
-    setShowDetailModal(true)
+    try {
+      const detail = await window.api.repair.getById(ticketId)
+      if (!detail) {
+        notify.error('Lỗi', 'Không tìm thấy thông tin phiếu')
+        return
+      }
+      setSelectedTicket(detail)
+      setEditForm({
+        customer_name: detail.customer_name || '',
+        customer_phone: detail.customer_phone || '',
+        device_info: detail.device_info || '',
+        imei: detail.imei || '',
+        issue_description: detail.issue_description || '',
+        promised_at: detail.promised_at ? detail.promised_at.slice(0, 16) : '',
+        deposit_paid: String(detail.deposit_paid || 0),
+        total_fee: String(detail.total_fee || 0),
+        note: detail.note || ''
+      })
+      setIsEditingInfo(Boolean(startEdit))
+      setShowDetailModal(true)
+    } catch (e: any) {
+      console.error(e)
+      notify.error('Lỗi', 'Không thể tải chi tiết phiếu')
+    }
   }
 
   async function handleUpdateStatus(newStatus: string) {
@@ -450,6 +459,10 @@ export const Repair: React.FC = () => {
                       key={t.id}
                       draggable
                       onDragStart={e => {
+                        if ((e.target as HTMLElement).closest('button, input, select, textarea, a')) {
+                          e.preventDefault()
+                          return
+                        }
                         e.dataTransfer.setData('text/plain', String(t.id))
                         setDraggedTicketId(t.id)
                       }}
@@ -463,9 +476,13 @@ export const Repair: React.FC = () => {
                         cursor: 'grab',
                         opacity: draggedTicketId === t.id ? 0.4 : 1,
                         transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                        borderLeft: `3px solid ${col.color}`
+                        borderLeft: `3px solid ${col.color}`,
+                        position: 'relative'
                       }}
-                      onClick={() => openDetail(t.id)}
+                      onClick={e => {
+                        if ((e.target as HTMLElement).closest('button')) return
+                        openDetail(t.id, false)
+                      }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                         <span style={{ fontWeight: 700, fontSize: 12, color: 'var(--primary)' }}>
@@ -513,15 +530,35 @@ export const Repair: React.FC = () => {
                           )}
                         </div>
                         <button
-                          className="btn btn-ghost btn-xs"
-                          style={{ padding: '2px 6px', fontSize: 11 }}
-                          onClick={(e) => {
+                          type="button"
+                          draggable={false}
+                          className="btn btn-outline btn-xs"
+                          style={{
+                            padding: '2px 8px',
+                            fontSize: 11,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 3,
+                            borderColor: 'var(--primary)',
+                            color: 'var(--primary)',
+                            background: '#fff',
+                            zIndex: 10
+                          }}
+                          onMouseDown={e => {
                             e.stopPropagation()
+                          }}
+                          onPointerDown={e => {
+                            e.stopPropagation()
+                          }}
+                          onClick={e => {
+                            e.stopPropagation()
+                            e.preventDefault()
                             openDetail(t.id, true)
                           }}
                           title="Sửa thông tin phiếu"
                         >
-                          <Edit2 size={11} style={{ marginRight: 2 }} /> Sửa
+                          <Edit2 size={11} style={{ pointerEvents: 'none' }} /> Sửa
                         </button>
                       </div>
                     </div>
@@ -757,11 +794,12 @@ export const Repair: React.FC = () => {
       <Modal
         show={showDetailModal}
         onClose={() => setShowDetailModal(false)}
-        title={`Phiếu Sửa Chữa: ${selectedTicket?.ticket_number}`}
+        title={isEditingInfo ? `Chỉnh sửa thông tin phiếu: ${selectedTicket?.ticket_number}` : `Phiếu Sửa Chữa: ${selectedTicket?.ticket_number}`}
         size="lg"
         footer={
           <>
             <button
+              type="button"
               className="btn btn-outline"
               style={{ marginRight: 'auto' }}
               onClick={() => handlePrintTicket(selectedTicket?.id)}
@@ -770,6 +808,7 @@ export const Repair: React.FC = () => {
               <span>In phiếu tiếp nhận</span>
             </button>
             <button
+              type="button"
               className="btn btn-ghost"
               style={{ color: 'var(--danger)', marginRight: 8 }}
               onClick={() => handleDeleteTicket(selectedTicket?.id)}
@@ -777,9 +816,20 @@ export const Repair: React.FC = () => {
               <Trash2 size={15} />
               <span>Hủy phiếu</span>
             </button>
-            <button className="btn btn-primary" onClick={() => setShowDetailModal(false)}>
-              Đóng
-            </button>
+            {isEditingInfo ? (
+              <>
+                <button type="button" className="btn btn-outline" onClick={() => setIsEditingInfo(false)}>
+                  Hủy sửa
+                </button>
+                <button type="button" className="btn btn-primary" onClick={handleSaveTicketInfo}>
+                  Lưu thay đổi
+                </button>
+              </>
+            ) : (
+              <button type="button" className="btn btn-primary" onClick={() => setShowDetailModal(false)}>
+                Đóng
+              </button>
+            )}
           </>
         }
       >
