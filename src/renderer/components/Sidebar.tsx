@@ -61,7 +61,7 @@ export const Sidebar: React.FC = () => {
         <div className="sidebar-logo-icon">❖</div>
         <div className="sidebar-logo-text">
           <h2>POS SYSTEM</h2>
-          <span>Quản lý Bán Hàng PRO</span>
+          <span>Quản lý Bán Hàng <strong style={{ fontSize: 10, opacity: 0.8, color: 'var(--primary)' }}>v2.0.2</strong></span>
         </div>
       </div>
 

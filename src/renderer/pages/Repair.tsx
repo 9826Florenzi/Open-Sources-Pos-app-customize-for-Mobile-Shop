@@ -268,6 +268,8 @@ export const Repair: React.FC = () => {
       setEditingLineId(null)
       const updated = await window.api.repair.getById(selectedTicket.id)
       setSelectedTicket(updated)
+      // Sync editForm so "Lưu thay đổi" doesn't overwrite with stale total_fee
+      setEditForm(prev => ({ ...prev, total_fee: String(updated?.total_fee ?? prev.total_fee) }))
       loadTickets()
     } else {
       notify.error('Lỗi', res.message)
@@ -305,6 +307,8 @@ export const Repair: React.FC = () => {
       setNewLineQty('1')
       const updated = await window.api.repair.getById(selectedTicket.id)
       setSelectedTicket(updated)
+      // Sync editForm so "Lưu thay đổi" doesn't overwrite with stale total_fee
+      setEditForm(prev => ({ ...prev, total_fee: String(updated?.total_fee ?? prev.total_fee) }))
       loadTickets()
     } else {
       notify.error('Lỗi', res.message)
@@ -317,6 +321,8 @@ export const Repair: React.FC = () => {
       notify.success('Đã xóa hạng mục')
       const updated = await window.api.repair.getById(selectedTicket.id)
       setSelectedTicket(updated)
+      // Sync editForm so "Lưu thay đổi" doesn't overwrite with stale total_fee
+      setEditForm(prev => ({ ...prev, total_fee: String(updated?.total_fee ?? prev.total_fee) }))
       loadTickets()
     }
   }

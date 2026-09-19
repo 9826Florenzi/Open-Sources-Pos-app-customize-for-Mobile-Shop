@@ -65,23 +65,8 @@ export function registerRepairHandlers(ipcMain: IpcMain, db: Database.Database) 
     `).get(id) as any
     if (!ticket) return null
 
-    // Support both repair_lines and legacy repair_ticket_items
-    let lines = db.prepare('SELECT * FROM repair_lines WHERE ticket_id = ?').all(id)
-    if (lines.length === 0) {
-      const legacyItems = db.prepare('SELECT * FROM repair_ticket_items WHERE ticket_id = ?').all(id) as any[]
-      if (legacyItems.length > 0) {
-        lines = legacyItems.map(item => ({
-          id: item.id,
-          ticket_id: item.ticket_id,
-          line_type: item.type || 'service',
-          name: item.description,
-          price: item.unit_price || 0,
-          qty: item.quantity || 1,
-          line_total: item.total || 0
-        }))
-      }
-    }
-    ticket.lines = lines
+    const lines = db.prepare('SELECT * FROM repair_lines WHERE ticket_id = ?').all(id)
+    ticket.lines = lines || []
     return ticket
   })
 

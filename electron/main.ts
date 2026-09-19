@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, session } from 'electron'
 import * as path from 'path'
 import { setupDatabase } from './db'
 import { registerAllHandlers } from './handlers/index'
@@ -39,6 +39,33 @@ function createWindow() {
     if (isDev && input.key === 'F12') {
       mainWindow?.webContents.toggleDevTools()
       event.preventDefault()
+    } else if (!isDev) {
+      // Chặn các phím tắt mở DevTools và reload trong production
+      const key = (input.key || '').toLowerCase()
+      if (
+        key === 'f12' ||
+        (input.control && input.shift && (key === 'i' || key === 'j')) ||
+        (input.control && (key === 'r' || key === 'u'))
+      ) {
+        event.preventDefault()
+      }
+    }
+  })
+
+  mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
+    try {
+      const parsedUrl = new URL(navigationUrl)
+      if (isDev) {
+        if (parsedUrl.origin !== 'http://localhost:5173' && parsedUrl.protocol !== 'file:') {
+          event.preventDefault()
+        }
+      } else {
+        if (parsedUrl.protocol !== 'file:') {
+          event.preventDefault()
+        }
+      }
+    } catch {
+      event.preventDefault()
     }
   })
 
@@ -55,6 +82,9 @@ function createWindow() {
 
 app.whenReady().then(() => {
   app.setAppUserModelId('com.pos.quanlybanhang')
+  session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
+    callback(false)
+  })
   const db = setupDatabase()
   registerAllHandlers(ipcMain, db)
   runAutoBackup(db.name)

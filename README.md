@@ -1,6 +1,6 @@
 # POS - Retail, Inventory & Repair Management System
 
-[![Release](https://img.shields.io/badge/Release-v2.0.0-0078D6?style=flat-square)](https://github.com/9826Florenzi/Open-Sources-Pos-app-customize-for-Mobile-Shop/releases/latest)
+[![Release](https://img.shields.io/badge/Release-v2.0.2-0078D6?style=flat-square)](https://github.com/9826Florenzi/Open-Sources-Pos-app-customize-for-Mobile-Shop/releases/latest)
 [![Download Windows](https://img.shields.io/badge/Download-Windows_Installer_(.exe)-0078D6?logo=windows&style=flat-square)](https://github.com/9826Florenzi/Open-Sources-Pos-app-customize-for-Mobile-Shop/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
@@ -18,11 +18,11 @@ A desktop Point of Sale (POS) and inventory management application tailored for 
 If you are an end-user or store owner, you do not need to install Node.js or compile from source. Download the pre-built installer:
 
 - **Download Windows 64-bit Installer (.exe)**: [Latest GitHub Releases](https://github.com/9826Florenzi/Open-Sources-Pos-app-customize-for-Mobile-Shop/releases/latest)  
-  *(Download file `POS Quản Lý Bán Hàng Setup 2.0.0.exe`, run and follow the setup wizard)*
+  *(Download file `POS Quản Lý Bán Hàng Setup 2.0.2.exe`, run and follow the setup wizard)*
 
 Dành cho chủ cửa hàng và người sử dụng: Bạn không cần cài đặt môi trường lập trình hay gõ lệnh. Tải trực tiếp bộ cài đặt:
 - **Tải tệp cài đặt Windows (.exe)**: [Mục Releases Mới Nhất](https://github.com/9826Florenzi/Open-Sources-Pos-app-customize-for-Mobile-Shop/releases/latest)  
-  *(Tải tệp `POS Quản Lý Bán Hàng Setup 2.0.0.exe` về máy, nhấp đúp để cài đặt và sử dụng ngay)*
+  *(Tải tệp `POS Quản Lý Bán Hàng Setup 2.0.2.exe` về máy, nhấp đúp để cài đặt và sử dụng ngay)*
 
 ---
 
@@ -57,9 +57,9 @@ This system is an offline-first desktop application designed for single-store re
 - Full ticket status progression: Received, Diagnosing, Awaiting Parts, Repairing, Completed, Returned, Cancelled.
 - Printable service claim receipts for customers.
 
-#### 4. Inventory & Purchase Orders (PO)
-- Formal purchase order lifecycle for supplier procurement.
-- Automatic inventory movement tracking (type, before/after quantity, unit cost, reference).
+#### 4. Smart Inventory & Warehouse Management
+- Unified adaptive stock intake modal: seamlessly handles regular accessories (quantity + unit cost) and mobile phones/iPhones with full serial/IMEI specification (IMEI bulk list, capacity, color, cosmetic condition, wholesale cost, and retail price).
+- Automatic inventory movement tracking (type, before/after quantity, unit cost, reference, and full configuration metadata).
 - Supplier account payable balance updates upon goods receipt.
 - Configurable minimum stock warning thresholds.
 
@@ -72,8 +72,10 @@ This system is an offline-first desktop application designed for single-store re
 - Visual comparative charts for revenue vs. gross margin by day.
 - Top 10 profitable products and services ranked by net profit over rolling 30-day windows.
 
-#### 7. Role-Based Access Control & Security
-- Distinct privilege tiers: Administrator and Employee.
+#### 7. Role-Based Access Control & Security Hardening
+- Distinct privilege tiers: Administrator, Cashier, Warehouse, and Employee.
+- Brute-force login defense: automatic 10-minute account lockout after 5 consecutive failed login attempts, paired with detailed audit logging.
+- Production window security: disabled DevTools shortcuts (`F12`, `Ctrl+Shift+I`), locked down navigation with `will-navigate`, and automatic denial of untrusted device permission requests.
 - Session auto-lock / logout after 15 minutes of inactivity.
 - Fast user profile selector on the authentication screen.
 - Itemized audit trail recording critical actions, timestamps, and operator identities.
@@ -192,9 +194,9 @@ Hệ thống là ứng dụng máy tính (Desktop App) hoạt động độc l�
 - Theo dõi trạng thái sửa chữa theo chu trình: Đã tiếp nhận, Đang kiểm tra, Chờ linh kiện, Đang sửa, Đã hoàn thành, Đã trả máy, Đã hủy.
 - In phiếu biên nhận dịch vụ sửa chữa cho khách hàng.
 
-#### 4. Quản Lý Kho & Đơn Nhập Hàng (PO)
-- Quản lý vòng đời đơn nhập hàng từ nhà cung cấp.
-- Tự động ghi nhận lịch sử biến động kho (loại giao dịch, số lượng trước/sau, đơn giá vốn, mã tham chiếu).
+#### 4. Quản Lý Kho Hàng & Nhập Kho Thông Minh
+- Modal nhập kho thích ứng thông minh: hỗ trợ cả phụ kiện thông thường (số lượng + đơn giá vốn) lẫn điện thoại / iPhone (nhập danh sách IMEI hàng loạt, dung lượng, màu sắc, tình trạng máy, giá vốn nhập và giá bán lẻ dự kiến).
+- Tự động ghi nhận lịch sử biến động kho (loại giao dịch, số lượng trước/sau, đơn giá vốn, cấu hình máy và danh sách IMEI).
 - Tự động cộng dồn công nợ phải trả nhà cung cấp khi nhận hàng.
 - Cấu hình mức tồn kho tối thiểu để đưa ra cảnh báo kịp thời.
 
@@ -207,8 +209,10 @@ Hệ thống là ứng dụng máy tính (Desktop App) hoạt động độc l�
 - Biểu đồ đối chiếu trực quan biến động giữa doanh thu và lợi nhuận thuần theo từng ngày.
 - Bảng thống kê Top 10 sản phẩm và dịch vụ mang lại lợi nhuận cao nhất trong 30 ngày gần nhất.
 
-#### 7. Phân Quyền & Bảo Mật Hệ Thống
-- Phân cấp quyền hạn: Quản trị viên (Admin) và Nhân viên bán hàng (Employee).
+#### 7. Phân Quyền Chặt Chẽ & Nâng Cấp Bảo Mật
+- Phân cấp vai trò rõ ràng: Quản trị viên (Admin), Thu ngân (Cashier), Thủ kho (Warehouse) và Nhân viên (Employee).
+- Cơ chế chống tấn công dò mật khẩu (Brute-force): tự động khóa tài khoản 10 phút sau 5 lần đăng nhập sai liên tiếp, ghi nhật ký kiểm toán.
+- Bảo mật cửa sổ Production: vô hiệu hóa phím tắt DevTools (`F12`, `Ctrl+Shift+I`), khóa điều hướng với `will-navigate`, tự động từ chối yêu cầu quyền thiết bị ngoại vi không xác thực.
 - Tự động khóa màn hình và đăng xuất phiên làm việc sau 15 phút không hoạt động.
 - Danh sách chọn tài khoản đăng nhập nhanh theo tên nhân viên.
 - Nhật ký kiểm toán (Audit Log) ghi nhận thời gian, danh tính người thao tác và chi tiết mọi biến động dữ liệu.

@@ -1,6 +1,6 @@
 {
   "name": "pos-quan-ly-ban-hang",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "description": "Phần mềm POS Quản Lý Bán Hàng - Cửa hàng Điện thoại/Phụ kiện/Sửa chữa",
   "main": "dist-electron/main.js",
   "author": "Đại Nguyễn Mobile",

@@ -178,11 +178,7 @@ export function registerPrintHandlers(ipcMain: IpcMain, db: Database.Database) {
 
       if (!ticket) return { success: false, message: 'Không tìm thấy phiếu sửa chữa' }
 
-      let lines = db.prepare('SELECT * FROM repair_lines WHERE ticket_id = ?').all(ticketId) as any[]
-      if (lines.length === 0) {
-        const legacy = db.prepare('SELECT * FROM repair_ticket_items WHERE ticket_id = ?').all(ticketId) as any[]
-        lines = legacy.map(l => ({ name: l.description, line_total: l.total }))
-      }
+      const lines = (db.prepare('SELECT * FROM repair_lines WHERE ticket_id = ?').all(ticketId) as any[]) || []
 
       const printerInterface = settings['print.type'] === 'network'
         ? `tcp://${settings['print.ip']}:${settings['print.port'] || 9100}`

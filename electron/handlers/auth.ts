@@ -4,13 +4,72 @@ import * as bcrypt from 'bcryptjs'
 import { logAudit } from '../db'
 import { session } from '../session'
 
+interface LoginAttempt {
+  count: number
+  lockedUntil: number
+}
+const loginAttempts = new Map<string, LoginAttempt>()
+
 export function registerAuthHandlers(ipcMain: IpcMain, db: Database.Database) {
   ipcMain.handle('auth:login', (_, { username, password }) => {
     try {
-      const user = db.prepare('SELECT * FROM users WHERE username = ? AND active = 1').get(username) as any
+      const cleanUsername = String(username || '').trim()
+      const now = Date.now()
+      const attempt = loginAttempts.get(cleanUsername)
+
+      if (attempt && attempt.lockedUntil > now) {
+        const remainingMinutes = Math.ceil((attempt.lockedUntil - now) / 60000)
+        return {
+          success: false,
+          message: `Tài khoản tạm thời bị khóa do nhập sai mật khẩu quá 5 lần. Vui lòng thử lại sau ${remainingMinutes} phút.`
+        }
+      }
+
+      const user = db.prepare('SELECT * FROM users WHERE username = ? AND active = 1').get(cleanUsername) as any
       if (!user) return { success: false, message: 'Tài khoản không tồn tại' }
-      const valid = bcrypt.compareSync(password, user.password_hash)
-      if (!valid) return { success: false, message: 'Mật khẩu không đúng' }
+
+      const valid = bcrypt.compareSync(password || '', user.password_hash)
+      if (!valid) {
+        const curAttempt = attempt && attempt.lockedUntil <= now ? { count: 0, lockedUntil: 0 } : (attempt || { count: 0, lockedUntil: 0 })
+        curAttempt.count += 1
+
+        if (curAttempt.count >= 5) {
+          curAttempt.lockedUntil = now + 10 * 60 * 1000 // Khóa 10 phút
+          loginAttempts.set(cleanUsername, curAttempt)
+
+          logAudit(db, {
+            user_id: user.id,
+            user_name: user.name,
+            action: 'Tài khoản bị khóa tạm thời',
+            entity: 'auth',
+            details: `Tài khoản (${cleanUsername}) bị tạm khóa 10 phút do nhập sai mật khẩu 5 lần liên tiếp`
+          })
+
+          return {
+            success: false,
+            message: 'Bạn đã nhập sai mật khẩu 5 lần liên tiếp. Tài khoản bị tạm khóa 10 phút để đảm bảo an toàn.'
+          }
+        } else {
+          loginAttempts.set(cleanUsername, curAttempt)
+
+          logAudit(db, {
+            user_id: user.id,
+            user_name: user.name,
+            action: 'Đăng nhập thất bại',
+            entity: 'auth',
+            details: `Nhập sai mật khẩu lần ${curAttempt.count}/5 cho tài khoản (${cleanUsername})`
+          })
+
+          return {
+            success: false,
+            message: `Mật khẩu không đúng. Bạn còn ${5 - curAttempt.count} lần thử trước khi bị khóa tạm thời.`
+          }
+        }
+      }
+
+      // Login success: reset attempt counter
+      loginAttempts.delete(cleanUsername)
+
       const { password_hash, ...userInfo } = user
       if (userInfo.role === 'cashier' || userInfo.role === 'warehouse') {
         userInfo.role = 'employee'
@@ -27,7 +86,7 @@ export function registerAuthHandlers(ipcMain: IpcMain, db: Database.Database) {
         user_name: user.name,
         action: 'Đăng nhập',
         entity: 'auth',
-        details: `Đăng nhập vào hệ thống (${username})`
+        details: `Đăng nhập vào hệ thống (${cleanUsername})`
       })
       return { success: true, user: userInfo }
     } catch (e: any) {
